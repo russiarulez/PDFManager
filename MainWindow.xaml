@@ -1,0 +1,31 @@
+﻿<Window x:Class="PDFManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PDFManager"
+        mc:Ignorable="d"
+        Title="PDF Manager" Height="450" Width="800">
+    <Grid>
+        <TabControl x:Name="tabControl">
+            <TabItem Header="Split PDF">
+                <Grid Background="#FFE5E5E5">
+                    <Label x:Name="lblSplitFileSource" Content="Please select a file to split" HorizontalAlignment="Left" Margin="40,36,0,0" VerticalAlignment="Top" Width="584" Grid.ColumnSpan="3"/>
+                    <Button x:Name="btnOpenFileSplit" Content="Select File" HorizontalAlignment="Left" Margin="556,36,0,0" VerticalAlignment="Top" Height="26" Width="72" Click="openFileSplit_Click" Grid.Column="2"/>
+                    <TextBox x:Name="txtSplitPageNum" HorizontalAlignment="Left" Margin="190,98,0,0" Text="" TextWrapping="Wrap" VerticalAlignment="Top" Width="66" />
+                    <Label x:Name="label" Content="Page Number To Split On" HorizontalAlignment="Left" Margin="40,94,0,0" VerticalAlignment="Top" Width="145" Grid.ColumnSpan="3"/>
+                    <Button x:Name="btnRunSplit" Content="Split" HorizontalAlignment="Center" VerticalAlignment="Center" Height="46" Width="84" Click="button_Click"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Merge PDF">
+                <Grid Background="#FFE5E5E5">
+                    <Button x:Name="btnRunMerge" Content="Merge" HorizontalAlignment="Left" Margin="348,0,0,0" VerticalAlignment="Center" Height="37" Width="84" Click="button1_Click"/>
+                    <Label x:Name="lblFileSourceMerge1" Content="Please select the first file to merge" HorizontalAlignment="Left" Margin="26,27,0,0" VerticalAlignment="Top" RenderTransformOrigin="12.856,0.476" Width="643"/>
+                    <Button x:Name="btnOpenFileMerge1" Content="Select File" HorizontalAlignment="Left" Margin="687,25,0,0" VerticalAlignment="Top" Height="26" Width="72" Click="btnOpenFileMerge1_Click"/>
+                    <Label x:Name="lblFileSourceMerge2" Content="Please select the second file to merge" HorizontalAlignment="Left" Margin="26,62,0,0" VerticalAlignment="Top" RenderTransformOrigin="12.856,0.476" Width="643"/>
+                    <Button x:Name="btnOpenFileMerge2" Content="Select File" HorizontalAlignment="Left" Margin="687,60,0,0" VerticalAlignment="Top" Height="26" Width="72" Click="btnOpenFileMerge2_Click"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>
