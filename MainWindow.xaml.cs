@@ -4,6 +4,7 @@ using iText.Kernel.Pdf.Navigation;
 using iText.Kernel.Utils;
 using iText.Layout;
 using iText.Layout.Element;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows;
@@ -127,7 +128,8 @@ namespace PDFManager
 
             doc.Close();
 
-            PdfDocument resultDoc = new PdfDocument(new PdfWriter(@"C:\Users\russi\Desktop\Merged File.pdf"));
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            PdfDocument resultDoc = new PdfDocument(new PdfWriter(desktopPath + @"\Merged File.pdf"));
             PdfDocument srcPdfDoc = new PdfDocument(new PdfReader(new MemoryStream(baos.ToArray()), new ReaderProperties()));
             srcPdfDoc.InitializeOutlines();
 
