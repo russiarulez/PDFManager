@@ -2,8 +2,6 @@
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Navigation;
 using iText.Kernel.Utils;
-using iText.Layout;
-using iText.Layout.Element;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -74,77 +72,53 @@ namespace PDFManager
         /// <param name="e"></param>
         private void button1_Click(object sender, RoutedEventArgs e)
         {
-            MemoryStream baos = new MemoryStream();
-            PdfDocument pdfDoc = new PdfDocument(new PdfWriter(baos));
-            Document doc = new Document(pdfDoc);
-
-            // Copier contains the additional logic to copy acroform fields to a new page.
-            // PdfPageFormCopier uses some caching logic which can potentially improve performance
-            // in case of the reusing of the same instance.
-            PdfPageFormCopier formCopier = new PdfPageFormCopier();
-
-            // Copy all merging file's pages to the temporary pdf file
-            List<PdfDocument> filesToMerge = new List<PdfDocument>();
-
-            string mergeSourcePath1 = lblFileSourceMerge1.Content.ToString();
-            string mergeSourcePath2 = lblFileSourceMerge2.Content.ToString();
-
-            filesToMerge.Add(new PdfDocument(new PdfReader(mergeSourcePath1)));
-            filesToMerge.Add(new PdfDocument(new PdfReader(mergeSourcePath2)));
-
-            int page = 1;
-
-            foreach (PdfDocument entry in filesToMerge)
+            try
             {
-                // PdfDocument srcDoc = entry.Value;
-                int numberOfPages = entry.GetNumberOfPages();
+                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                string outputPath = Path.Combine(desktopPath, "Merged File.pdf");
 
-                for (int i = 1; i <= numberOfPages; i++, page++)
+                var sourceFiles = new List<string>
                 {
-                    Text text = new Text(string.Format("Page {0}", page));
-                    entry.CopyPagesTo(i, i, pdfDoc, formCopier);
+                    lblFileSourceMerge1.Content?.ToString(),
+                    lblFileSourceMerge2.Content?.ToString()
+                };
 
-                    // Put the destination at the very first page of each merged document
-                    if (i == 1)
+                using (var resultDoc = new PdfDocument(new PdfWriter(outputPath)))
+                {
+                    var formCopier = new PdfPageFormCopier();
+                    int page = 1;
+
+                    foreach (var filePath in sourceFiles)
                     {
-                        text.SetDestination("p" + page);
+                        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                            continue;
 
-                        PdfOutline rootOutLine = pdfDoc.GetOutlines(false);
-                        PdfOutline outline = rootOutLine.AddOutline("p" + page);
-                        outline.AddDestination(PdfDestination.MakeDestination(new PdfString("p" + page)));
+                        using (var srcDoc = new PdfDocument(new PdfReader(filePath)))
+                        {
+                            int numberOfPages = srcDoc.GetNumberOfPages();
+                            for (int i = 1; i <= numberOfPages; i++, page++)
+                            {
+                                srcDoc.CopyPagesTo(i, i, resultDoc, formCopier);
+
+                                // Add outline/bookmark for the first page of each document
+                                if (i == 1)
+                                {
+                                    var rootOutline = resultDoc.GetOutlines(false);
+                                    var outline = rootOutline.AddOutline($"p{page}");
+                                    outline.AddDestination(PdfDestination.MakeDestination(new PdfString($"p{page}")));
+                                }
+                            }
+                        }
                     }
-
-                    doc.Add(new Paragraph(text)
-                        .SetFixedPosition(page, 549, 810, 40)
-                        .SetMargin(0)
-                        .SetMultipliedLeading(1));
                 }
-            }
 
-            foreach (PdfDocument srcDocument in filesToMerge)
+                MessageBox.Show("PDFs merged successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
             {
-                srcDocument.Close();
+                MessageBox.Show($"Error merging PDFs: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-            doc.Close();
-
-            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            PdfDocument resultDoc = new PdfDocument(new PdfWriter(desktopPath + @"\Merged File.pdf"));
-            PdfDocument srcPdfDoc = new PdfDocument(new PdfReader(new MemoryStream(baos.ToArray()), new ReaderProperties()));
-            srcPdfDoc.InitializeOutlines();
-
-            List<int> copyPagesOrderList = new List<int>();
-            for (int i = 1; i <= srcPdfDoc.GetNumberOfPages(); i++)
-            {
-                copyPagesOrderList.Add(i);
-            }
-
-            srcPdfDoc.CopyPagesTo(copyPagesOrderList, resultDoc, formCopier);
-
-            srcPdfDoc.Close();
-            resultDoc.Close();
         }
-
 
         private void openFileSplit_Click(object sender, RoutedEventArgs e)
         {
