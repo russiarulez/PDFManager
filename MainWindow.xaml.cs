@@ -5,6 +5,7 @@ using iText.Kernel.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace PDFManager
@@ -66,57 +67,73 @@ namespace PDFManager
         }
 
         /// <summary>
-        /// Merge PDF documents
+        /// Handle the button click to merge PDF files asynchronously
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void button1_Click(object sender, RoutedEventArgs e)
+        private async void button1_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                string outputPath = Path.Combine(desktopPath, "Merged File.pdf");
+                // Disable the button to prevent double-clicks
+                btnRunMerge.IsEnabled = false;
 
-                var sourceFiles = new List<string>
-                {
-                    lblFileSourceMerge1.Content?.ToString(),
-                    lblFileSourceMerge2.Content?.ToString()
-                };
-
-                using (var resultDoc = new PdfDocument(new PdfWriter(outputPath)))
-                {
-                    var formCopier = new PdfPageFormCopier();
-                    int page = 1;
-
-                    foreach (var filePath in sourceFiles)
-                    {
-                        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-                            continue;
-
-                        using (var srcDoc = new PdfDocument(new PdfReader(filePath)))
-                        {
-                            int numberOfPages = srcDoc.GetNumberOfPages();
-                            for (int i = 1; i <= numberOfPages; i++, page++)
-                            {
-                                srcDoc.CopyPagesTo(i, i, resultDoc, formCopier);
-
-                                // Add outline/bookmark for the first page of each document
-                                if (i == 1)
-                                {
-                                    var rootOutline = resultDoc.GetOutlines(false);
-                                    var outline = rootOutline.AddOutline($"p{page}");
-                                    outline.AddDestination(PdfDestination.MakeDestination(new PdfString($"p{page}")));
-                                }
-                            }
-                        }
-                    }
-                }
+                // Run the merge operation in a background task
+                await Task.Run(() => MergePdfFiles());
 
                 MessageBox.Show("PDFs merged successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error merging PDFs: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                // Re-enable the button after the operation is complete
+                btnRunMerge.IsEnabled = true;
+            }
+        }
+
+        /// <summary>
+        /// Merge multiple PDF documents into a single document
+        /// </summary>
+        private void MergePdfFiles()
+        {
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string outputPath = Path.Combine(desktopPath, "Merged File.pdf");
+
+            var sourceFiles = new List<string>
+            {
+                lblFileSourceMerge1.Dispatcher.Invoke(() => lblFileSourceMerge1.Content?.ToString()),
+                lblFileSourceMerge2.Dispatcher.Invoke(() => lblFileSourceMerge2.Content?.ToString())
+            };
+
+            using (var resultDoc = new PdfDocument(new PdfWriter(outputPath)))
+            {
+                var formCopier = new PdfPageFormCopier();
+                int page = 1;
+
+                foreach (var filePath in sourceFiles)
+                {
+                    if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                        continue;
+
+                    using (var srcDoc = new PdfDocument(new PdfReader(filePath)))
+                    {
+                        int numberOfPages = srcDoc.GetNumberOfPages();
+                        for (int i = 1; i <= numberOfPages; i++, page++)
+                        {
+                            srcDoc.CopyPagesTo(i, i, resultDoc, formCopier);
+
+                            if (i == 1)
+                            {
+                                var rootOutline = resultDoc.GetOutlines(false);
+                                var outline = rootOutline.AddOutline($"p{page}");
+                                outline.AddDestination(PdfDestination.MakeDestination(new PdfString($"p{page}")));
+                            }
+                        }
+                    }
+                }
             }
         }
 
