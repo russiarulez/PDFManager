@@ -15,7 +15,7 @@
                     <Button x:Name="btnOpenFileSplit" Content="Select File" HorizontalAlignment="Left" Margin="556,36,0,0" VerticalAlignment="Top" Height="26" Width="72" Click="openFileSplit_Click" Grid.Column="2"/>
                     <TextBox x:Name="txtSplitPageNum" HorizontalAlignment="Left" Margin="190,98,0,0" Text="" TextWrapping="Wrap" VerticalAlignment="Top" Width="66" />
                     <Label x:Name="label" Content="Page Number To Split On" HorizontalAlignment="Left" Margin="40,94,0,0" VerticalAlignment="Top" Width="145" Grid.ColumnSpan="3"/>
-                    <Button x:Name="btnRunSplit" Content="Split" HorizontalAlignment="Center" VerticalAlignment="Center" Height="46" Width="84" Click="button_Click"/>
+                    <Button x:Name="btnRunSplit" Content="Split" HorizontalAlignment="Center" VerticalAlignment="Center" Height="46" Width="84" Click="btnRunSplit_Click"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Merge PDF">
@@ -38,7 +38,7 @@
                         <Button x:Name="btnRemoveFileMerge" Content="Remove" Width="84" Height="37" Margin="6,0" Click="btnRemoveFileMerge_Click" IsEnabled="False"/>
                         <Button x:Name="btnMoveUp" Content="Move Up" Width="84" Height="37" Margin="6,0" Click="btnMoveUp_Click" IsEnabled="False"/>
                         <Button x:Name="btnMoveDown" Content="Move Down" Width="84" Height="37" Margin="6,0" Click="btnMoveDown_Click" IsEnabled="False"/>
-                        <Button x:Name="btnRunMerge" Content="Merge" Width="84" Height="37" Margin="6,0" Click="button1_Click" IsEnabled="False"/>
+                        <Button x:Name="btnRunMerge" Content="Merge" Width="84" Height="37" Margin="6,0" Click="btnRunMerge_Click" IsEnabled="False"/>
                     </StackPanel>
                 </Grid>
             </TabItem>

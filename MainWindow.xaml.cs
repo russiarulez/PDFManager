@@ -1,12 +1,12 @@
-﻿using iText.Forms;
+using iText.Forms;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Navigation;
 using iText.Kernel.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -23,57 +23,76 @@ namespace PDFManager
         {
             InitializeComponent();
             lblMergeOutput.Content = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Merged File.pdf");
-            ((INotifyCollectionChanged)lstMergeFiles.Items).CollectionChanged += (s, e) =>
-            {
-                bool moreThanOne = lstMergeFiles.Items.Count > 1;
-                bool hasSelection = lstMergeFiles.SelectedIndex >= 0;
-                btnRunMerge.IsEnabled = moreThanOne;
-                btnMoveUp.IsEnabled = moreThanOne && hasSelection;
-                btnMoveDown.IsEnabled = moreThanOne && hasSelection;
-            };
-
-            lstMergeFiles.SelectionChanged += (s, e) =>
-            {
-                bool moreThanOne = lstMergeFiles.Items.Count > 1;
-                bool hasSelection = lstMergeFiles.SelectedIndex >= 0;
-                btnRemoveFileMerge.IsEnabled = hasSelection;
-                btnMoveUp.IsEnabled = moreThanOne && hasSelection;
-                btnMoveDown.IsEnabled = moreThanOne && hasSelection;
-            };
+            ((INotifyCollectionChanged)lstMergeFiles.Items).CollectionChanged += (s, e) => UpdateMergeButtonStates();
+            lstMergeFiles.SelectionChanged += (s, e) => UpdateMergeButtonStates();
         }
 
-        /// <summary>
-        /// Split a single PDF document into multiple documents based on a page number
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void button_Click(object sender, RoutedEventArgs e)
+        private void UpdateMergeButtonStates()
         {
-            string splitSourcePath = lblSplitFileSource.Content.ToString();
-            PdfDocument pdfDoc = new PdfDocument(new PdfReader(splitSourcePath));
+            bool moreThanOne = lstMergeFiles.Items.Count > 1;
+            bool hasSelection = lstMergeFiles.SelectedIndex >= 0;
+            btnRunMerge.IsEnabled = moreThanOne;
+            btnRemoveFileMerge.IsEnabled = hasSelection;
+            btnMoveUp.IsEnabled = moreThanOne && hasSelection;
+            btnMoveDown.IsEnabled = moreThanOne && hasSelection;
+        }
 
-            IList<int> pageNums = new int[] { int.Parse(txtSplitPageNum.Text) }; //Page number to split the document on
-
-            string folderPath = Path.GetDirectoryName(splitSourcePath); //Get the containing folder path
-            string splitDest = folderPath + @"\SplitDoc_{0}.pdf";
-
-            IList<PdfDocument> splitDocuments = new CustomPdfSplitter(pdfDoc, splitDest).SplitByPageNumbers(pageNums);
-
-            foreach (PdfDocument doc in splitDocuments)
+        private async void btnRunSplit_Click(object sender, RoutedEventArgs e)
+        {
+            string sourcePath = lblSplitFileSource.Content?.ToString();
+            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
             {
-                doc.Close();
+                MessageBox.Show("Please select a valid PDF file to split.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
 
-            pdfDoc.Close();
+            if (!int.TryParse(txtSplitPageNum.Text, out int pageNum) || pageNum < 1)
+            {
+                MessageBox.Show("Please enter a valid page number greater than 0.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                btnRunSplit.IsEnabled = false;
+                btnRunSplit.Content = "Splitting...";
+
+                await Task.Run(() => SplitPdfFile(sourcePath, pageNum));
+
+                MessageBox.Show("PDF split successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error splitting PDF: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                btnRunSplit.IsEnabled = true;
+                btnRunSplit.Content = "Split";
+            }
         }
 
-        /// <summary>
-        /// Custom PdfSplitter to split PDF documents
-        /// </summary>
+        private void SplitPdfFile(string sourcePath, int pageNum)
+        {
+            string folderPath = Path.GetDirectoryName(sourcePath);
+            string splitDest = Path.Combine(folderPath, "SplitDoc_{0}.pdf");
+
+            using (var pdfDoc = new PdfDocument(new PdfReader(sourcePath)))
+            {
+                int totalPages = pdfDoc.GetNumberOfPages();
+                if (pageNum >= totalPages)
+                    throw new ArgumentOutOfRangeException($"Page number {pageNum} is out of range. Document has {totalPages} pages.");
+
+                IList<PdfDocument> splitDocuments = new CustomPdfSplitter(pdfDoc, splitDest).SplitByPageNumbers(new int[] { pageNum });
+                foreach (PdfDocument doc in splitDocuments)
+                    doc.Close();
+            }
+        }
+
         private class CustomPdfSplitter : PdfSplitter
         {
-            private string dest;
-            private int fileNumber = 1; //Counter to keep track of resulting files after the split
+            private readonly string dest;
+            private int fileNumber = 1;
 
             public CustomPdfSplitter(PdfDocument pdfDocument, string dest) : base(pdfDocument)
             {
@@ -86,20 +105,35 @@ namespace PDFManager
             }
         }
 
-        /// <summary>
-        /// Handle the button click to merge PDF files asynchronously
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private async void button1_Click(object sender, RoutedEventArgs e)
+        private async void btnRunMerge_Click(object sender, RoutedEventArgs e)
         {
+            string outputPath = lblMergeOutput.Content?.ToString();
+            if (string.IsNullOrWhiteSpace(outputPath))
+            {
+                MessageBox.Show("Please specify an output file path.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!Directory.Exists(Path.GetDirectoryName(outputPath)))
+            {
+                MessageBox.Show("The output directory does not exist.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var sourceFiles = lstMergeFiles.Items.Cast<string>().ToList();
+            var missingFiles = sourceFiles.Where(f => !File.Exists(f)).ToList();
+            if (missingFiles.Any())
+            {
+                MessageBox.Show($"The following files no longer exist:\n{string.Join("\n", missingFiles)}", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             try
             {
-                // Disable the button to prevent double-clicks
                 btnRunMerge.IsEnabled = false;
+                btnRunMerge.Content = "Merging...";
 
-                // Run the merge operation in a background task
-                await Task.Run(() => MergePdfFiles());
+                await Task.Run(() => MergePdfFiles(outputPath, sourceFiles));
 
                 MessageBox.Show("PDFs merged successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -109,50 +143,30 @@ namespace PDFManager
             }
             finally
             {
-                // Re-enable the button after the operation is complete
-                btnRunMerge.IsEnabled = true;
+                btnRunMerge.Content = "Merge";
+                UpdateMergeButtonStates();
             }
         }
 
-        /// <summary>
-        /// Merge multiple PDF documents into a single document
-        /// </summary>
-        private void MergePdfFiles()
+        private void MergePdfFiles(string outputPath, List<string> sourceFiles)
         {
-            string outputPath = lblMergeOutput.Dispatcher.Invoke(() => lblMergeOutput.Content?.ToString());
-            if (string.IsNullOrWhiteSpace(outputPath))
-            {
-                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                outputPath = Path.Combine(desktopPath, "Merged File.pdf");
-            }
-
-            var sourceFiles = lstMergeFiles.Dispatcher.Invoke(() =>
-                lstMergeFiles.Items.Cast<string>().ToList());
-
             using (var resultDoc = new PdfDocument(new PdfWriter(outputPath)))
             {
                 var formCopier = new PdfPageFormCopier();
-                int page = 1;
+                int pageIndex = 1;
 
                 foreach (var filePath in sourceFiles)
                 {
-                    if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-                        continue;
-
                     using (var srcDoc = new PdfDocument(new PdfReader(filePath)))
                     {
                         int numberOfPages = srcDoc.GetNumberOfPages();
-                        for (int i = 1; i <= numberOfPages; i++, page++)
-                        {
-                            srcDoc.CopyPagesTo(i, i, resultDoc, formCopier);
+                        srcDoc.CopyPagesTo(1, numberOfPages, resultDoc, formCopier);
 
-                            if (i == 1)
-                            {
-                                var rootOutline = resultDoc.GetOutlines(false);
-                                var outline = rootOutline.AddOutline($"p{page}");
-                                outline.AddDestination(PdfDestination.MakeDestination(new PdfString($"p{page}")));
-                            }
-                        }
+                        var rootOutline = resultDoc.GetOutlines(false);
+                        var outline = rootOutline.AddOutline(Path.GetFileNameWithoutExtension(filePath));
+                        outline.AddDestination(PdfExplicitDestination.CreateFit(resultDoc.GetPage(pageIndex)));
+
+                        pageIndex += numberOfPages;
                     }
                 }
             }
@@ -169,7 +183,10 @@ namespace PDFManager
             if (openFileDialog.ShowDialog() == true)
             {
                 foreach (var file in openFileDialog.FileNames)
-                    lstMergeFiles.Items.Add(file);
+                {
+                    if (!lstMergeFiles.Items.Contains(file))
+                        lstMergeFiles.Items.Add(file);
+                }
             }
         }
 
@@ -214,13 +231,13 @@ namespace PDFManager
 
         private void openFileSplit_Click(object sender, RoutedEventArgs e)
         {
-            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "PDF Files (*.pdf)|*.pdf"
+            };
 
             if (openFileDialog.ShowDialog() == true)
-            {
                 lblSplitFileSource.Content = openFileDialog.FileName;
-            }
         }
-
     }
 }
