@@ -4,6 +4,8 @@ using iText.Kernel.Pdf.Navigation;
 using iText.Kernel.Utils;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -20,6 +22,24 @@ namespace PDFManager
         public MainWindow()
         {
             InitializeComponent();
+            lblMergeOutput.Content = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Merged File.pdf");
+            ((INotifyCollectionChanged)lstMergeFiles.Items).CollectionChanged += (s, e) =>
+            {
+                bool moreThanOne = lstMergeFiles.Items.Count > 1;
+                bool hasSelection = lstMergeFiles.SelectedIndex >= 0;
+                btnRunMerge.IsEnabled = moreThanOne;
+                btnMoveUp.IsEnabled = moreThanOne && hasSelection;
+                btnMoveDown.IsEnabled = moreThanOne && hasSelection;
+            };
+
+            lstMergeFiles.SelectionChanged += (s, e) =>
+            {
+                bool moreThanOne = lstMergeFiles.Items.Count > 1;
+                bool hasSelection = lstMergeFiles.SelectedIndex >= 0;
+                btnRemoveFileMerge.IsEnabled = hasSelection;
+                btnMoveUp.IsEnabled = moreThanOne && hasSelection;
+                btnMoveDown.IsEnabled = moreThanOne && hasSelection;
+            };
         }
 
         /// <summary>
@@ -99,14 +119,15 @@ namespace PDFManager
         /// </summary>
         private void MergePdfFiles()
         {
-            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            string outputPath = Path.Combine(desktopPath, "Merged File.pdf");
-
-            var sourceFiles = new List<string>
+            string outputPath = lblMergeOutput.Dispatcher.Invoke(() => lblMergeOutput.Content?.ToString());
+            if (string.IsNullOrWhiteSpace(outputPath))
             {
-                lblFileSourceMerge1.Dispatcher.Invoke(() => lblFileSourceMerge1.Content?.ToString()),
-                lblFileSourceMerge2.Dispatcher.Invoke(() => lblFileSourceMerge2.Content?.ToString())
-            };
+                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                outputPath = Path.Combine(desktopPath, "Merged File.pdf");
+            }
+
+            var sourceFiles = lstMergeFiles.Dispatcher.Invoke(() =>
+                lstMergeFiles.Items.Cast<string>().ToList());
 
             using (var resultDoc = new PdfDocument(new PdfWriter(outputPath)))
             {
@@ -137,6 +158,60 @@ namespace PDFManager
             }
         }
 
+        private void btnAddFileMerge_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "PDF Files (*.pdf)|*.pdf",
+                Multiselect = true
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                foreach (var file in openFileDialog.FileNames)
+                    lstMergeFiles.Items.Add(file);
+            }
+        }
+
+        private void btnRemoveFileMerge_Click(object sender, RoutedEventArgs e)
+        {
+            while (lstMergeFiles.SelectedItems.Count > 0)
+                lstMergeFiles.Items.Remove(lstMergeFiles.SelectedItems[0]);
+        }
+
+        private void btnBrowseMergeOutput_Click(object sender, RoutedEventArgs e)
+        {
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "PDF Files (*.pdf)|*.pdf",
+                FileName = "Merged File.pdf",
+                DefaultExt = ".pdf"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+                lblMergeOutput.Content = saveFileDialog.FileName;
+        }
+
+        private void btnMoveUp_Click(object sender, RoutedEventArgs e)
+        {
+            int index = lstMergeFiles.SelectedIndex;
+            if (index <= 0) return;
+            var item = lstMergeFiles.Items[index];
+            lstMergeFiles.Items.RemoveAt(index);
+            lstMergeFiles.Items.Insert(index - 1, item);
+            lstMergeFiles.SelectedIndex = index - 1;
+        }
+
+        private void btnMoveDown_Click(object sender, RoutedEventArgs e)
+        {
+            int index = lstMergeFiles.SelectedIndex;
+            if (index < 0 || index >= lstMergeFiles.Items.Count - 1) return;
+            var item = lstMergeFiles.Items[index];
+            lstMergeFiles.Items.RemoveAt(index);
+            lstMergeFiles.Items.Insert(index + 1, item);
+            lstMergeFiles.SelectedIndex = index + 1;
+        }
+
         private void openFileSplit_Click(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
@@ -147,24 +222,5 @@ namespace PDFManager
             }
         }
 
-        private void btnOpenFileMerge1_Click(object sender, RoutedEventArgs e)
-        {
-            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                lblFileSourceMerge1.Content = openFileDialog.FileName;
-            }
-        }
-
-        private void btnOpenFileMerge2_Click(object sender, RoutedEventArgs e)
-        {
-            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                lblFileSourceMerge2.Content = openFileDialog.FileName;
-            }
-        }
     }
 }

@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PDFManager"
         mc:Ignorable="d"
-        Title="PDF Manager" Height="450" Width="800">
+        Title="PDF Manager" Height="450" Width="800"
+        Icon="app.ico">
     <Grid>
         <TabControl x:Name="tabControl">
             <TabItem Header="Split PDF">
@@ -19,11 +20,26 @@
             </TabItem>
             <TabItem Header="Merge PDF">
                 <Grid Background="#FFE5E5E5">
-                    <Button x:Name="btnRunMerge" Content="Merge" HorizontalAlignment="Left" Margin="348,0,0,0" VerticalAlignment="Center" Height="37" Width="84" Click="button1_Click"/>
-                    <Label x:Name="lblFileSourceMerge1" Content="Please select the first file to merge" HorizontalAlignment="Left" Margin="26,27,0,0" VerticalAlignment="Top" RenderTransformOrigin="12.856,0.476" Width="643"/>
-                    <Button x:Name="btnOpenFileMerge1" Content="Select File" HorizontalAlignment="Left" Margin="687,25,0,0" VerticalAlignment="Top" Height="26" Width="72" Click="btnOpenFileMerge1_Click"/>
-                    <Label x:Name="lblFileSourceMerge2" Content="Please select the second file to merge" HorizontalAlignment="Left" Margin="26,62,0,0" VerticalAlignment="Top" RenderTransformOrigin="12.856,0.476" Width="643"/>
-                    <Button x:Name="btnOpenFileMerge2" Content="Select File" HorizontalAlignment="Left" Margin="687,60,0,0" VerticalAlignment="Top" Height="26" Width="72" Click="btnOpenFileMerge2_Click"/>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Label Grid.Row="0" Content="Files To Merge" Margin="26,8,0,0"/>
+                    <ListBox x:Name="lstMergeFiles" Grid.Row="1" Margin="26,0,26,8"/>
+                    <DockPanel Grid.Row="2" Margin="26,0,26,8">
+                        <Label Content="Output File:" DockPanel.Dock="Left" Height="26" VerticalContentAlignment="Center" Padding="0,0,6,0"/>
+                        <Button x:Name="btnBrowseMergeOutput" Content="Browse" DockPanel.Dock="Right" Width="72" Height="26" Margin="6,0,0,0" Click="btnBrowseMergeOutput_Click"/>
+                        <Label x:Name="lblMergeOutput" Content="" Background="White" BorderBrush="#FFABADB3" BorderThickness="1" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
+                    </DockPanel>
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <Button x:Name="btnAddFileMerge" Content="Add File" Width="84" Height="37" Margin="6,0" Click="btnAddFileMerge_Click"/>
+                        <Button x:Name="btnRemoveFileMerge" Content="Remove" Width="84" Height="37" Margin="6,0" Click="btnRemoveFileMerge_Click" IsEnabled="False"/>
+                        <Button x:Name="btnMoveUp" Content="Move Up" Width="84" Height="37" Margin="6,0" Click="btnMoveUp_Click" IsEnabled="False"/>
+                        <Button x:Name="btnMoveDown" Content="Move Down" Width="84" Height="37" Margin="6,0" Click="btnMoveDown_Click" IsEnabled="False"/>
+                        <Button x:Name="btnRunMerge" Content="Merge" Width="84" Height="37" Margin="6,0" Click="button1_Click" IsEnabled="False"/>
+                    </StackPanel>
                 </Grid>
             </TabItem>
         </TabControl>
