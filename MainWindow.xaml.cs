@@ -236,8 +236,26 @@ namespace PDFManager
                 Filter = "PDF Files (*.pdf)|*.pdf"
             };
 
-            if (openFileDialog.ShowDialog() == true)
-                lblSplitFileSource.Content = openFileDialog.FileName;
+            if (openFileDialog.ShowDialog() != true) return;
+
+            string path = openFileDialog.FileName;
+            lblSplitFileSource.Content = path;
+            lblSplitOutputFolder.Content = Path.GetDirectoryName(path);
+
+            try
+            {
+                using (var pdfDoc = new PdfDocument(new PdfReader(path)))
+                {
+                    int pages = pdfDoc.GetNumberOfPages();
+                    lblSplitPageCount.Content = pages > 1
+                        ? $"(enter 1 – {pages - 1}, document has {pages} pages)"
+                        : "(document has only 1 page and cannot be split)";
+                }
+            }
+            catch
+            {
+                lblSplitPageCount.Content = "(unable to read page count)";
+            }
         }
     }
 }

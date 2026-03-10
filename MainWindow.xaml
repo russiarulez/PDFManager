@@ -11,11 +11,36 @@
         <TabControl x:Name="tabControl">
             <TabItem Header="Split PDF">
                 <Grid Background="#FFE5E5E5">
-                    <Label x:Name="lblSplitFileSource" Content="Please select a file to split" HorizontalAlignment="Left" Margin="40,36,0,0" VerticalAlignment="Top" Width="584" Grid.ColumnSpan="3"/>
-                    <Button x:Name="btnOpenFileSplit" Content="Select File" HorizontalAlignment="Left" Margin="556,36,0,0" VerticalAlignment="Top" Height="26" Width="72" Click="openFileSplit_Click" Grid.Column="2"/>
-                    <TextBox x:Name="txtSplitPageNum" HorizontalAlignment="Left" Margin="190,98,0,0" Text="" TextWrapping="Wrap" VerticalAlignment="Top" Width="66" />
-                    <Label x:Name="label" Content="Page Number To Split On" HorizontalAlignment="Left" Margin="40,94,0,0" VerticalAlignment="Top" Width="145" Grid.ColumnSpan="3"/>
-                    <Button x:Name="btnRunSplit" Content="Split" HorizontalAlignment="Center" VerticalAlignment="Center" Height="46" Width="84" Click="btnRunSplit_Click"/>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Label Grid.Row="0" Content="Source File" Margin="26,12,0,2"/>
+                    <DockPanel Grid.Row="1" Margin="26,0,26,0">
+                        <Button x:Name="btnOpenFileSplit" Content="Select" DockPanel.Dock="Right" Width="72" Height="26" Margin="6,0,0,0" Click="openFileSplit_Click"/>
+                        <Label x:Name="lblSplitFileSource" Content="No file selected" Background="White" BorderBrush="#FFABADB3" BorderThickness="1" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
+                    </DockPanel>
+
+                    <Label Grid.Row="2" Content="Split After Page" Margin="26,12,0,2"/>
+                    <Grid Grid.Row="3" Margin="26,0,26,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="txtSplitPageNum" Grid.Column="0" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
+                        <Label x:Name="lblSplitPageCount" Grid.Column="1" Content="" VerticalContentAlignment="Center" Foreground="Gray" Margin="8,0,0,0" Padding="0"/>
+                    </Grid>
+
+                    <Label Grid.Row="4" Content="Output Folder" Margin="26,12,0,2"/>
+                    <Label x:Name="lblSplitOutputFolder" Grid.Row="5" Content="" Background="White" BorderBrush="#FFABADB3" BorderThickness="1" Height="26" VerticalContentAlignment="Center" Padding="4,0" Margin="26,0,26,0" VerticalAlignment="Top"/>
+
+                    <Button x:Name="btnRunSplit" Grid.Row="6" Content="Split" HorizontalAlignment="Center" Margin="0,0,0,16" Height="37" Width="84" Click="btnRunSplit_Click"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Merge PDF">
