@@ -83,7 +83,9 @@ namespace PDFManager
                 if (pageNum >= totalPages)
                     throw new ArgumentOutOfRangeException($"Page number {pageNum} is out of range. Document has {totalPages} pages.");
 
-                IList<PdfDocument> splitDocuments = new CustomPdfSplitter(pdfDoc, splitDest).SplitByPageNumbers(new int[] { pageNum });
+                // SplitByPageNumbers treats each number as the first page of the next document,
+                // so "split after page N" means the next document starts at N + 1
+                IList<PdfDocument> splitDocuments = new CustomPdfSplitter(pdfDoc, splitDest).SplitByPageNumbers(new int[] { pageNum + 1 });
                 foreach (PdfDocument doc in splitDocuments)
                     doc.Close();
             }
