@@ -152,6 +152,21 @@ namespace PDFManager
                 return;
             }
 
+            if (sourceFiles.Any(f => string.Equals(f, outputPath, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show("The output file cannot be one of the files being merged. Please choose a different output path.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (File.Exists(outputPath))
+            {
+                var result = MessageBox.Show(
+                    $"\"{outputPath}\" already exists and will be overwritten.\n\nContinue?",
+                    "Confirm Overwrite", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (result != MessageBoxResult.Yes)
+                    return;
+            }
+
             try
             {
                 btnRunMerge.IsEnabled = false;
@@ -163,6 +178,9 @@ namespace PDFManager
             }
             catch (Exception ex)
             {
+                // The writer truncates the output file before merging starts,
+                // so a failed merge leaves behind a broken partial PDF
+                try { if (File.Exists(outputPath)) File.Delete(outputPath); } catch { }
                 MessageBox.Show($"Error merging PDFs: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
@@ -181,16 +199,27 @@ namespace PDFManager
 
                 foreach (var filePath in sourceFiles)
                 {
-                    using (var srcDoc = new PdfDocument(new PdfReader(filePath)))
+                    try
                     {
-                        int numberOfPages = srcDoc.GetNumberOfPages();
-                        srcDoc.CopyPagesTo(1, numberOfPages, resultDoc, formCopier);
+                        using (var srcDoc = new PdfDocument(new PdfReader(filePath)))
+                        {
+                            int numberOfPages = srcDoc.GetNumberOfPages();
+                            srcDoc.CopyPagesTo(1, numberOfPages, resultDoc, formCopier);
 
-                        var rootOutline = resultDoc.GetOutlines(false);
-                        var outline = rootOutline.AddOutline(Path.GetFileNameWithoutExtension(filePath));
-                        outline.AddDestination(PdfExplicitDestination.CreateFit(resultDoc.GetPage(pageIndex)));
+                            var rootOutline = resultDoc.GetOutlines(false);
+                            var outline = rootOutline.AddOutline(Path.GetFileNameWithoutExtension(filePath));
+                            outline.AddDestination(PdfExplicitDestination.CreateFit(resultDoc.GetPage(pageIndex)));
 
-                        pageIndex += numberOfPages;
+                            pageIndex += numberOfPages;
+                        }
+                    }
+                    catch (iText.Kernel.Exceptions.BadPasswordException)
+                    {
+                        throw new InvalidOperationException($"'{Path.GetFileName(filePath)}' is password-protected and cannot be merged.");
+                    }
+                    catch (iText.IO.Exceptions.IOException)
+                    {
+                        throw new InvalidOperationException($"'{Path.GetFileName(filePath)}' is not a valid PDF or is corrupted.");
                     }
                 }
             }
@@ -206,11 +235,29 @@ namespace PDFManager
 
             if (openFileDialog.ShowDialog() == true)
             {
+                var skipped = new List<string>();
                 foreach (var file in openFileDialog.FileNames)
                 {
-                    if (!lstMergeFiles.Items.Contains(file))
+                    if (lstMergeFiles.Items.Cast<string>().Any(f => string.Equals(f, file, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+
+                    try
+                    {
+                        using (new PdfDocument(new PdfReader(file))) { }
                         lstMergeFiles.Items.Add(file);
+                    }
+                    catch (iText.Kernel.Exceptions.BadPasswordException)
+                    {
+                        skipped.Add($"{Path.GetFileName(file)} (password-protected)");
+                    }
+                    catch
+                    {
+                        skipped.Add($"{Path.GetFileName(file)} (not a valid PDF)");
+                    }
                 }
+
+                if (skipped.Any())
+                    MessageBox.Show($"The following files were not added:\n{string.Join("\n", skipped)}", "Some Files Skipped", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
