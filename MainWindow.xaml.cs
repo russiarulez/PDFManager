@@ -52,6 +52,20 @@ namespace PDFManager
                 return;
             }
 
+            string folderPath = Path.GetDirectoryName(sourcePath);
+            var existingOutputs = new[] { 1, 2 }
+                .Select(i => Path.Combine(folderPath, $"SplitDoc_{i}.pdf"))
+                .Where(File.Exists)
+                .ToList();
+            if (existingOutputs.Any())
+            {
+                var result = MessageBox.Show(
+                    $"The following files already exist and will be overwritten:\n{string.Join("\n", existingOutputs)}\n\nContinue?",
+                    "Confirm Overwrite", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (result != MessageBoxResult.Yes)
+                    return;
+            }
+
             try
             {
                 btnRunSplit.IsEnabled = false;
@@ -60,6 +74,14 @@ namespace PDFManager
                 await Task.Run(() => SplitPdfFile(sourcePath, pageNum));
 
                 MessageBox.Show("PDF split successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (iText.Kernel.Exceptions.BadPasswordException)
+            {
+                MessageBox.Show("This PDF is password-protected and cannot be split.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (iText.IO.Exceptions.IOException)
+            {
+                MessageBox.Show("This file is not a valid PDF or is corrupted.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
             {
@@ -81,7 +103,7 @@ namespace PDFManager
             {
                 int totalPages = pdfDoc.GetNumberOfPages();
                 if (pageNum >= totalPages)
-                    throw new ArgumentOutOfRangeException($"Page number {pageNum} is out of range. Document has {totalPages} pages.");
+                    throw new InvalidOperationException($"Page number {pageNum} is out of range. The document has {totalPages} pages, so the split point must be between 1 and {totalPages - 1}.");
 
                 // SplitByPageNumbers treats each number as the first page of the next document,
                 // so "split after page N" means the next document starts at N + 1
@@ -253,6 +275,10 @@ namespace PDFManager
                         ? $"(enter 1 – {pages - 1}, document has {pages} pages)"
                         : "(document has only 1 page and cannot be split)";
                 }
+            }
+            catch (iText.Kernel.Exceptions.BadPasswordException)
+            {
+                lblSplitPageCount.Content = "(this PDF is password-protected and cannot be split)";
             }
             catch
             {
