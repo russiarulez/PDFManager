@@ -17,6 +17,15 @@ namespace PDFManager
     /// https://kb.itextpdf.com/home/it7kb/examples/splitting-a-pdf-file
     /// https://kb.itextpdf.com/home/it7kb/examples/merging-documents-and-create-a-table-of-contents
     /// </summary>
+    public class FileNameConverter : System.Windows.Data.IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+            => value is string path ? Path.GetFileName(path) : value;
+
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
     public partial class MainWindow : Window
     {
         public MainWindow()

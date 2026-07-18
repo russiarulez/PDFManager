@@ -7,6 +7,9 @@
         mc:Ignorable="d"
         Title="PDF Manager" Height="450" Width="800"
         Icon="app.ico">
+    <Window.Resources>
+        <local:FileNameConverter x:Key="FileNameConverter"/>
+    </Window.Resources>
     <Grid>
         <TabControl x:Name="tabControl">
             <TabItem Header="Split PDF">
@@ -52,7 +55,18 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Label Grid.Row="0" Content="Files To Merge" Margin="26,8,0,0"/>
-                    <ListBox x:Name="lstMergeFiles" Grid.Row="1" Margin="26,0,26,8" AllowDrop="True"/>
+                    <ListBox x:Name="lstMergeFiles" Grid.Row="1" Margin="26,0,26,8" AllowDrop="True">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="ToolTip" Value="{Binding}"/>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource FileNameConverter}}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                     <DockPanel Grid.Row="2" Margin="26,0,26,8">
                         <Label Content="Output File:" DockPanel.Dock="Left" Height="26" VerticalContentAlignment="Center" Padding="0,0,6,0"/>
                         <Button x:Name="btnBrowseMergeOutput" Content="Browse" DockPanel.Dock="Right" Width="72" Height="26" Margin="6,0,0,0" Click="btnBrowseMergeOutput_Click"/>
