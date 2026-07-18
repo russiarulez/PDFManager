@@ -52,9 +52,9 @@ namespace PDFManager
                 return;
             }
 
-            string folderPath = Path.GetDirectoryName(sourcePath);
+            string destPattern = GetSplitDestPattern(sourcePath);
             var existingOutputs = new[] { 1, 2 }
-                .Select(i => Path.Combine(folderPath, $"SplitDoc_{i}.pdf"))
+                .Select(i => string.Format(destPattern, i))
                 .Where(File.Exists)
                 .ToList();
             if (existingOutputs.Any())
@@ -94,14 +94,22 @@ namespace PDFManager
             }
         }
 
-        private void SplitPdfFile(string sourcePath, int pageNum)
+        private static string GetSplitDestPattern(string sourcePath)
         {
             string folderPath = Path.GetDirectoryName(sourcePath);
-            string splitDest = Path.Combine(folderPath, "SplitDoc_{0}.pdf");
+            string baseName = Path.GetFileNameWithoutExtension(sourcePath);
+            return Path.Combine(folderPath, baseName + "_part{0}.pdf");
+        }
+
+        private void SplitPdfFile(string sourcePath, int pageNum)
+        {
+            string splitDest = GetSplitDestPattern(sourcePath);
 
             using (var pdfDoc = new PdfDocument(new PdfReader(sourcePath)))
             {
                 int totalPages = pdfDoc.GetNumberOfPages();
+                if (totalPages < 2)
+                    throw new InvalidOperationException("This document has only 1 page and cannot be split.");
                 if (pageNum >= totalPages)
                     throw new InvalidOperationException($"Page number {pageNum} is out of range. The document has {totalPages} pages, so the split point must be between 1 and {totalPages - 1}.");
 
