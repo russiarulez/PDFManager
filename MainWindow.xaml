@@ -10,7 +10,7 @@
     <Grid>
         <TabControl x:Name="tabControl">
             <TabItem Header="Split PDF">
-                <Grid Background="#FFE5E5E5">
+                <Grid Background="#FFE5E5E5" AllowDrop="True" DragOver="tab_DragOver" Drop="splitTab_Drop">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -24,7 +24,7 @@
                     <Label Grid.Row="0" Content="Source File" Margin="26,12,0,2"/>
                     <DockPanel Grid.Row="1" Margin="26,0,26,0">
                         <Button x:Name="btnOpenFileSplit" Content="Select" DockPanel.Dock="Right" Width="72" Height="26" Margin="6,0,0,0" Click="openFileSplit_Click"/>
-                        <Label x:Name="lblSplitFileSource" Content="No file selected" Background="White" BorderBrush="#FFABADB3" BorderThickness="1" Height="26" VerticalContentAlignment="Center" Padding="4,0"/>
+                        <Label x:Name="lblSplitFileSource" Content="No file selected" Background="White" BorderBrush="#FFABADB3" BorderThickness="1" Height="26" VerticalContentAlignment="Center" Padding="4,0" AllowDrop="True"/>
                     </DockPanel>
 
                     <Label Grid.Row="2" Content="Split After Page" Margin="26,12,0,2"/>
@@ -44,7 +44,7 @@
                 </Grid>
             </TabItem>
             <TabItem Header="Merge PDF">
-                <Grid Background="#FFE5E5E5">
+                <Grid Background="#FFE5E5E5" AllowDrop="True" DragOver="tab_DragOver" Drop="mergeTab_Drop">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -52,7 +52,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Label Grid.Row="0" Content="Files To Merge" Margin="26,8,0,0"/>
-                    <ListBox x:Name="lstMergeFiles" Grid.Row="1" Margin="26,0,26,8"/>
+                    <ListBox x:Name="lstMergeFiles" Grid.Row="1" Margin="26,0,26,8" AllowDrop="True"/>
                     <DockPanel Grid.Row="2" Margin="26,0,26,8">
                         <Label Content="Output File:" DockPanel.Dock="Left" Height="26" VerticalContentAlignment="Center" Padding="0,0,6,0"/>
                         <Button x:Name="btnBrowseMergeOutput" Content="Browse" DockPanel.Dock="Right" Width="72" Height="26" Margin="6,0,0,0" Click="btnBrowseMergeOutput_Click"/>

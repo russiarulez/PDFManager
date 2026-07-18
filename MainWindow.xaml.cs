@@ -73,7 +73,9 @@ namespace PDFManager
 
                 await Task.Run(() => SplitPdfFile(sourcePath, pageNum));
 
-                MessageBox.Show("PDF split successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                var openFolder = MessageBox.Show("PDF split successfully!\n\nOpen the output folder?", "Success", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                if (openFolder == MessageBoxResult.Yes)
+                    ShowInExplorer(string.Format(destPattern, 1));
             }
             catch (iText.Kernel.Exceptions.BadPasswordException)
             {
@@ -182,7 +184,9 @@ namespace PDFManager
 
                 await Task.Run(() => MergePdfFiles(outputPath, sourceFiles));
 
-                MessageBox.Show("PDFs merged successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                var openFolder = MessageBox.Show("PDFs merged successfully!\n\nOpen the output folder?", "Success", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                if (openFolder == MessageBoxResult.Yes)
+                    ShowInExplorer(outputPath);
             }
             catch (Exception ex)
             {
@@ -242,31 +246,34 @@ namespace PDFManager
             };
 
             if (openFileDialog.ShowDialog() == true)
+                AddMergeFiles(openFileDialog.FileNames);
+        }
+
+        private void AddMergeFiles(IEnumerable<string> files)
+        {
+            var skipped = new List<string>();
+            foreach (var file in files)
             {
-                var skipped = new List<string>();
-                foreach (var file in openFileDialog.FileNames)
+                if (lstMergeFiles.Items.Cast<string>().Any(f => string.Equals(f, file, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                try
                 {
-                    if (lstMergeFiles.Items.Cast<string>().Any(f => string.Equals(f, file, StringComparison.OrdinalIgnoreCase)))
-                        continue;
-
-                    try
-                    {
-                        using (new PdfDocument(new PdfReader(file))) { }
-                        lstMergeFiles.Items.Add(file);
-                    }
-                    catch (iText.Kernel.Exceptions.BadPasswordException)
-                    {
-                        skipped.Add($"{Path.GetFileName(file)} (password-protected)");
-                    }
-                    catch
-                    {
-                        skipped.Add($"{Path.GetFileName(file)} (not a valid PDF)");
-                    }
+                    using (new PdfDocument(new PdfReader(file))) { }
+                    lstMergeFiles.Items.Add(file);
                 }
-
-                if (skipped.Any())
-                    MessageBox.Show($"The following files were not added:\n{string.Join("\n", skipped)}", "Some Files Skipped", MessageBoxButton.OK, MessageBoxImage.Warning);
+                catch (iText.Kernel.Exceptions.BadPasswordException)
+                {
+                    skipped.Add($"{Path.GetFileName(file)} (password-protected)");
+                }
+                catch
+                {
+                    skipped.Add($"{Path.GetFileName(file)} (not a valid PDF)");
+                }
             }
+
+            if (skipped.Any())
+                MessageBox.Show($"The following files were not added:\n{string.Join("\n", skipped)}", "Some Files Skipped", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         private void btnRemoveFileMerge_Click(object sender, RoutedEventArgs e)
@@ -308,6 +315,43 @@ namespace PDFManager
             lstMergeFiles.SelectedIndex = index + 1;
         }
 
+        private void tab_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void splitTab_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0)
+                return;
+
+            if (files.Length > 1)
+            {
+                MessageBox.Show("Please drop a single PDF file to split.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!string.Equals(Path.GetExtension(files[0]), ".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show("Only PDF files are supported.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            SetSplitSourceFile(files[0]);
+        }
+
+        private void mergeTab_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
+                AddMergeFiles(files);
+        }
+
+        private static void ShowInExplorer(string filePath)
+        {
+            System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+        }
+
         private void openFileSplit_Click(object sender, RoutedEventArgs e)
         {
             var openFileDialog = new Microsoft.Win32.OpenFileDialog
@@ -317,7 +361,11 @@ namespace PDFManager
 
             if (openFileDialog.ShowDialog() != true) return;
 
-            string path = openFileDialog.FileName;
+            SetSplitSourceFile(openFileDialog.FileName);
+        }
+
+        private void SetSplitSourceFile(string path)
+        {
             lblSplitFileSource.Content = path;
             lblSplitOutputFolder.Content = Path.GetDirectoryName(path);
 
